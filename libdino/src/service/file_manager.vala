@@ -183,6 +183,7 @@ public class FileManager : StreamInteractionModule, Object {
 
     public void add_sender(FileSender file_sender) {
         file_senders.add(file_sender);
+        print("Adding sender\n");
         file_sender.upload_available.connect((account) => {
             upload_available(account);
         });

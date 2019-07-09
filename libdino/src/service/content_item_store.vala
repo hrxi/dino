@@ -160,7 +160,9 @@ public class ContentItemStore : StreamInteractionModule, Object {
     private void insert_file_transfer(FileTransfer file_transfer, Conversation conversation) {
         FileItem item = new FileItem(file_transfer, -1);
         item.id = db.add_content_item(conversation, file_transfer.time, file_transfer.local_time, 2, file_transfer.id, false);
+        print("ghi\n");
         if (!discard(item)) {
+            print("jkl\n");
             if (collection_conversations.has_key(conversation)) {
                 collection_conversations.get(conversation).insert_item(item);
             }

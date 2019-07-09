@@ -32,6 +32,7 @@ public class Module : Jingle.ContentType, XmppStreamModule {
         if (has_feature == null || !(!)has_feature) {
             return false;
         }
+        print(@"is_available(..., $(full_jid.to_string()))\n");
         return stream.get_module(Jingle.Module.IDENTITY).is_available(stream, Jingle.TransportType.STREAMING, full_jid);
     }
 
@@ -46,12 +47,10 @@ public class Module : Jingle.ContentType, XmppStreamModule {
         Jingle.Session session = stream.get_module(Jingle.Module.IDENTITY)
             .create_session(stream, Jingle.TransportType.STREAMING, receiver_full_jid, Jingle.Senders.INITIATOR, "a-file-offer", description); // TODO(hrxi): Why "a-file-offer"?
 
-        SourceFunc callback = offer_file_stream.callback;
-        session.accepted.connect((stream) => {
-            session.conn.input_stream.close();
-            Idle.add((owned) callback);
-        });
-        yield;
+        print("something\n");
+        yield session.conn.input_stream.close_async();
+
+        print("session established\n");
 
         // TODO(hrxi): catch errors
         yield session.conn.output_stream.splice_async(input_stream, OutputStreamSpliceFlags.CLOSE_SOURCE|OutputStreamSpliceFlags.CLOSE_TARGET);
@@ -103,6 +102,7 @@ public class Parameters : Jingle.ContentParameters, Object {
     }
 
     public void on_session_initiate(XmppStream stream, Jingle.Session session) {
+        print("on_session_initiate\n");
         parent.file_incoming(stream, new FileTransfer(session, this));
     }
 }
