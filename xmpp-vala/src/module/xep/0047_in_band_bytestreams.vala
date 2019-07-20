@@ -32,7 +32,6 @@ public class Module : XmppStreamModule, Iq.Handler {
             return;
         }
         Connection? conn = stream.get_flag(Flag.IDENTITY).get_connection(sid);
-        print(@"node.name: $(node.name)\n");
         if (node.name == "open") {
             if (conn == null) {
                 stream.get_module(Iq.Module.IDENTITY).send_iq(stream, new Iq.Stanza.error(iq, new ErrorStanza.not_acceptable("unexpected IBB connection")));
@@ -67,7 +66,6 @@ public class Connection : IOStream {
             this.connection = connection;
         }
         public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws IOError {
-            print("read (unsupported)\n");
             throw new IOError.NOT_SUPPORTED("can't do non-async reads on in-band bytestreams");
         }
         public override async ssize_t read_async(uint8[]? buffer, int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
@@ -86,7 +84,6 @@ public class Connection : IOStream {
             this.connection = connection;
         }
         public override ssize_t write(uint8[] buffer, Cancellable? cancellable = null) throws IOError {
-            print("write (unsupported)\n");
             throw new IOError.NOT_SUPPORTED("can't do non-async writes on in-band bytestreams");
         }
         public override async ssize_t write_async(uint8[]? buffer, int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
@@ -223,7 +220,6 @@ public class Connection : IOStream {
     }
 
     public async ssize_t write_async(uint8[]? buffer, int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
-        print("before write_async\n");
         while (state == State.WAITING_FOR_CONNECT || state == State.CONNECTING) {
             if (cancellable != null) {
                 cancellable.set_error_if_cancelled();
@@ -231,7 +227,6 @@ public class Connection : IOStream {
             set_write_callback(write_async.callback, cancellable, io_priority);
             yield;
         }
-        print("write_async\n");
         throw_if_closed();
         assert(state == State.CONNECTED);
         // TODO(hrxi): merging?
@@ -268,7 +263,6 @@ public class Connection : IOStream {
     }
 
     public async bool close_read_async(int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
-        print("close_read_async\n");
         input_closed = true;
         if (!output_closed) {
             return true;
@@ -276,7 +270,6 @@ public class Connection : IOStream {
         return yield close_async_impl(io_priority, cancellable);
     }
     public async bool close_write_async(int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
-        print("close_write_async\n");
         output_closed = true;
         if (!input_closed) {
             return true;
@@ -285,7 +278,6 @@ public class Connection : IOStream {
     }
     delegate void OnClose(bool success);
     private bool close_impl(Cancellable? cancellable, OnClose on_close) {
-        print("close_impl\n");
         if (state == State.DISCONNECTING || state == State.DISCONNECTED || state == State.ERROR) {
             on_close(true);
             return true;
@@ -334,15 +326,12 @@ public class Connection : IOStream {
             Iq.Stanza iq = new Iq.Stanza.set(open) { to=receiver_full_jid };
             stream.get_module(Iq.Module.IDENTITY).send_iq(stream, iq, (stream, iq) => {
                 if (conn.state != State.CONNECTING) {
-                    print(@"$(conn.state)\n");
                     assert(conn.state != State.CONNECTED);
                     return;
                 }
-                print("ibb iq result\n");
                 if (!iq.is_error()) {
                     conn.state = State.CONNECTED;
                     stream.get_flag(Flag.IDENTITY).add_connection(conn);
-                    print("success\n");
                     conn.trigger_write_callback();
                 } else {
                     conn.set_error("connection failed");
