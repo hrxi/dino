@@ -571,7 +571,7 @@ public class Connection : IOStream {
             SourceFunc callback = wait_and_check_for_errors.callback;
             ulong id = cancellable.connect(() => callback());
             print("wait for connect\n");
-            callbacks.add(new OnSetInnerCallback() { callback=callback, io_priority=io_priority});
+            callbacks.add(new OnSetInnerCallback() { callback=(owned)callback, io_priority=io_priority});
             yield;
             cancellable.disconnect(id);
         }
