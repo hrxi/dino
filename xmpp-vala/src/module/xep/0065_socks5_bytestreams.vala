@@ -57,6 +57,7 @@ public class Module : XmppStreamModule, Iq.Handler {
                                 if (host == null || jid == null || port <= 0 || port > 65535) {
                                     return;
                                 }
+                                print(@"$(host) $(jid.to_string()) $(port)\n");
                                 stream.get_flag(Flag.IDENTITY).proxies.add(new Proxy(host, jid, port));
                             });
                         }

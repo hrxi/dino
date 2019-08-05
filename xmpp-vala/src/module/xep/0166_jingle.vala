@@ -18,6 +18,11 @@ public errordomain IqError {
 
 void send_iq_error(IqError iq_error, XmppStream stream, Iq.Stanza iq) {
     ErrorStanza error;
+    if (iq_error.message == null) {
+        print(@"bad_error\n");
+    } else {
+        print(@"error: $(iq_error.message)\n");
+    }
     if (iq_error is IqError.BAD_REQUEST) {
         error = new ErrorStanza.bad_request(iq_error.message);
     } else if (iq_error is IqError.NOT_ACCEPTABLE) {
@@ -614,6 +619,7 @@ public class Connection : IOStream {
             return connection.close_read(cancellable);
         }
         public override async bool close_async(int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
+            print("Input.close_async\n");
             return yield connection.close_read_async(io_priority, cancellable);
         }
     }
@@ -664,8 +670,10 @@ public class Connection : IOStream {
     public void set_inner(IOStream inner) {
         assert(this.inner == null);
         this.inner = inner;
+        print("set_inner\n");
         foreach (OnSetInnerCallback c in callbacks) {
             Idle.add((owned) c.callback, c.io_priority);
+            print("set_inner: Idle.add(...)\n");
         }
         callbacks = null;
     }
@@ -690,6 +698,7 @@ public class Connection : IOStream {
             }
             SourceFunc callback = wait_and_check_for_errors.callback;
             ulong id = cancellable.connect(() => callback());
+            print("wait for connect\n");
             callbacks.add(new OnSetInnerCallback() { callback=(owned)callback, io_priority=io_priority});
             yield;
             cancellable.disconnect(id);
@@ -713,6 +722,7 @@ public class Connection : IOStream {
         try {
             return yield inner.input_stream.read_async(buffer, io_priority, cancellable);
         } catch (IOError e) {
+            print("read_async error\n");
             handle_connection_error(e);
             throw e;
         }
@@ -722,6 +732,7 @@ public class Connection : IOStream {
         try {
             return yield inner.output_stream.write_async(buffer, io_priority, cancellable);
         } catch (IOError e) {
+            print("write_async error\n");
             handle_connection_error(e);
             throw e;
         }
@@ -735,6 +746,7 @@ public class Connection : IOStream {
         return true;
     }
     public async bool close_read_async(int io_priority = GLib.Priority.DEFAULT, Cancellable? cancellable = null) throws IOError {
+        print("close_read_async\n");
         yield wait_and_check_for_errors(io_priority, cancellable);
         if (read_closed) {
             return true;
@@ -745,6 +757,7 @@ public class Connection : IOStream {
         try {
             result = yield inner.input_stream.close_async(io_priority, cancellable);
         } catch (IOError e) {
+            print("input_stream.close_async error\n");
             if (error == null) {
                 error = e;
             }
@@ -752,6 +765,7 @@ public class Connection : IOStream {
         try {
             result = (yield close_if_both_closed(io_priority, cancellable)) && result;
         } catch (IOError e) {
+            print("close_if_both_closed error\n");
             if (error == null) {
                 error = e;
             }
@@ -781,6 +795,7 @@ public class Connection : IOStream {
         try {
             result = yield inner.output_stream.close_async(io_priority, cancellable);
         } catch (IOError e) {
+            print("output_stream.close_async error\n");
             if (error == null) {
                 error = e;
             }
@@ -788,6 +803,7 @@ public class Connection : IOStream {
         try {
             result = (yield close_if_both_closed(io_priority, cancellable)) && result;
         } catch (IOError e) {
+            print("close_if_both_closed error\n");
             if (error == null) {
                 error = e;
             }

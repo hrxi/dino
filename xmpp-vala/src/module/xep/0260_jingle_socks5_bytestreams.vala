@@ -331,6 +331,7 @@ class Parameters : Jingle.TransportParameters, Object {
         }
     }
     public async void wait_for_remote_activation(Candidate candidate, SocketConnection conn) {
+        print(@"waiting for proxy activation for $(candidate.cid)\n");
         waiting_for_activation_cid = candidate.cid;
         waiting_for_activation_callback = wait_for_remote_activation.callback;
         yield;
@@ -394,18 +395,22 @@ class Parameters : Jingle.TransportParameters, Object {
         SocketClient socket_client = new SocketClient() { timeout=3 };
 
         string address = @"[$(candidate.host)]:$(candidate.port)";
+        print(@"trying to connect to $(address)\n");
 
         size_t written;
         size_t read;
         uint8[] read_buffer = new uint8[1024];
         ByteArray write_buffer = new ByteArray();
 
+        print("1\n");
         SocketConnection conn = yield socket_client.connect_to_host_async(address, 0);
+        print("2\n");
 
         // 05 SOCKS version 5
         // 01 number of authentication methods: 1
         // 00 nop authentication
         yield conn.output_stream.write_all_async({0x05, 0x01, 0x00}, GLib.Priority.DEFAULT, null, out written);
+        print("3\n");
 
         yield conn.input_stream.read_all_async(read_buffer[0:2], GLib.Priority.DEFAULT, null, out read);
         // 05 SOCKS version 5
@@ -485,6 +490,8 @@ class Parameters : Jingle.TransportParameters, Object {
                 // An error in the connection establishment isn't fatal, just
                 // try the next candidate or respond that none of the
                 // candidates work.
+                string address = @"[$(candidate.host)]:$(candidate.port)";
+                print(@"can't connect to $(address): $(e.message)\n");
             }
         }
         local_determined_selected_candidate = true;
@@ -494,6 +501,7 @@ class Parameters : Jingle.TransportParameters, Object {
             .put_attribute("sid", sid)
             .put_node(new StanzaNode.build("candidate-error", NS_URI))
         );
+        print("ran out of remote candidates to try\n");
     }
     public void create_transport_connection(XmppStream stream, Jingle.Session session) {
         this.session = session;
